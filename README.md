@@ -104,4 +104,4 @@ MIT License
 
 Givanildo Brunetta
 - Email: givanildobrunetta@gmail.com
-- GitHub: https://github.com/givanildo 
+- GitHub: https://github.com/givanildo
