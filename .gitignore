@@ -1,17 +1,20 @@
-# Arquivos de compilação Arduino
+# Arquivos de build Arduino
+build/
 *.hex
 *.elf
 *.bin
 
-# Arquivos temporários do Arduino IDE
+# Arduino IDE
 .vscode/
+*.tmp
 *~
-*.swp
-*.swo
 
-# Arquivos do sistema
+# Arquivos de sistema
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Arquivos de backup do Arduino IDE
+# Arquivos de backup
 *.bak
+*.old
+*.orig

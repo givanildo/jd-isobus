@@ -1,100 +1,90 @@
-# JD-ISOBus Monitor
+# Biblioteca JD_ISOBus
 
-Monitor de dados CAN bus para implementos agrícolas John Deere usando ESP32 e MCP2515.
+Biblioteca Arduino para monitoramento de implementos agrícolas John Deere via CAN bus J1939.
 
-## Características
+## Recursos
 
-- Leitura de dados CAN bus via protocolo J1939
-- Configuração WiFi via portal cativo
-- Interface web responsiva para visualização em tempo real
-- Suporte para PGNs específicos da John Deere:
-  - PGN 61184: Fluxo e umidade de grãos
-  - PGN 65535: Informações do cabeçote
-- Visualização em gauges e tabelas
-- Armazenamento de configurações na memória flash
+- 📊 Leitura de dados CAN J1939
+  - Fluxo de grãos
+  - Umidade
+  - Informações do cabeçote
+- 📱 Interface web responsiva
+- 🔄 Configuração WiFi via portal cativo
+- 💾 Armazenamento de configurações
 
-## Requisitos de Hardware
+## Hardware Necessário
 
 - ESP32
-- Módulo MCP2515 CAN bus
-- Conexões:
-  ```
-  ESP32     | MCP2515
-  ----------|----------
-  GPIO5     | CS
-  GPIO18    | SCK
-  GPIO23    | MOSI
-  GPIO19    | MISO
-  GPIO4     | INT
-  3.3V      | VCC
-  GND       | GND
-  ```
+- Módulo MCP2515 (CAN Bus)
+
+### Conexões
+
+```
+ESP32     | MCP2515
+----------|----------
+GPIO5     | CS
+GPIO18    | SCK
+GPIO23    | MOSI
+GPIO19    | MISO
+GPIO4     | INT
+3.3V      | VCC
+GND       | GND
+```
 
 ## Instalação
 
-### Dependências Arduino IDE
-
-1. Instale as seguintes bibliotecas via Gerenciador de Bibliotecas:
+1. Baixe este repositório
+2. Copie para a pasta `libraries` do Arduino
+3. Instale as dependências:
    - ArduinoJson
+   - AsyncTCP
+   - ESPAsyncWebServer
    - MCP_CAN_lib
 
-2. Instale manualmente as bibliotecas:
-   - [AsyncTCP](https://github.com/me-no-dev/AsyncTCP)
-   - [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer)
+## Exemplos
 
-3. Instale o plugin "ESP32 Sketch Data Upload":
-   - [ESP32 Sketch Data Upload](https://github.com/me-no-dev/arduino-esp32fs-plugin)
+### Monitor Básico
+```cpp
+#include <JD_ISOBus.h>
 
-### Configuração
+JD_ISOBus isobus(5); // CS no pino 5
 
-1. Clone este repositório:
-   ```bash
-   git clone https://github.com/givanildo/jd-isobus.git
-   ```
+void setup() {
+  Serial.begin(115200);
+  if (!isobus.begin()) {
+    Serial.println("Erro CAN!");
+    while(1);
+  }
+}
 
-2. Abra o arquivo `JD_ISOBus_Monitor.ino` na Arduino IDE
+void loop() {
+  JD_ISOBus::CANMessage msg;
+  JD_ISOBus::HarvestData data;
+  
+  if (isobus.getMessage(msg) && isobus.parseMessage(msg, data)) {
+    Serial.printf("Fluxo: %.2f kg/s\n", data.grainFlow);
+    Serial.printf("Umidade: %.1f%%\n", data.grainMoisture);
+  }
+  delay(100);
+}
+```
 
-3. Selecione a placa "ESP32 Dev Module" em Ferramentas > Placa
-
-4. Faça o upload do código
-
-5. Use "ESP32 Sketch Data Upload" para enviar os arquivos da pasta data/
-
-## Uso
-
-1. Ao ligar, o ESP32 criará uma rede WiFi "JD-ISOBus-Config"
-2. Conecte-se a esta rede (senha: 12345678)
-3. Acesse o portal de configuração (geralmente 192.168.4.1)
-4. Selecione sua rede WiFi e insira a senha
-5. O ESP32 irá reiniciar e conectar-se à rede configurada
-6. Acesse a interface web através do IP mostrado no monitor serial
+### Monitor Web
+Veja o exemplo completo em `examples/JD_ISOBus_Monitor`
 
 ## Interface Web
 
-A interface web mostra:
-- Status da conexão WiFi
-- Dados em tempo real via gauges:
-  - Fluxo de grãos (kg/s)
-  - Umidade (%)
-  - Largura do cabeçote (m)
-- Tabela com últimas mensagens CAN recebidas
+![Interface Web](docs/interface.png)
 
-## Estrutura do Projeto
+- Status da conexão
+- Dados em tempo real
+- Gráficos e indicadores
+- Histórico de mensagens
 
-```
-JD_ISOBus_Monitor/
-  ├── JD_ISOBus_Monitor.ino    # Arquivo principal
-  ├── WiFiManager.h            # Gerenciador WiFi (header)
-  ├── WiFiManager.cpp          # Gerenciador WiFi (implementação)
-  ├── JD_ISOBus.h             # Parser J1939 (header)
-  ├── JD_ISOBus.cpp           # Parser J1939 (implementação)
-  └── data/                    # Arquivos web
-      └── index.html          # Interface web
-```
+## PGNs Suportados
 
-## Contribuindo
-
-Contribuições são bem-vindas! Por favor, sinta-se à vontade para submeter um Pull Request.
+- `61184`: Fluxo e umidade de grãos
+- `65535`: Informações do cabeçote
 
 ## Licença
 
