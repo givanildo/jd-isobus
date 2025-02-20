@@ -1,87 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <title>JD-ISOBus Monitor</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body {
-            font-family: Arial;
-            margin: 20px;
-            background: #f0f0f0;
+        :root {
+            --primary-color: #1f77b4;
+            --success-color: #3c763d;
+            --error-color: #a94442;
+            --bg-color: #f0f2f6;
+            --card-bg: white;
+            --text-color: #333;
+            --border-radius: 10px;
         }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 0 15px;
         }
+
+        h1, h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
         .card {
-            background: white;
+            background: var(--card-bg);
             padding: 20px;
-            margin: 10px 0;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
         }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
         .status {
             display: inline-block;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin: 5px 0;
         }
+
         .status-ok {
             background: #dff0d8;
-            color: #3c763d;
+            color: var(--success-color);
         }
+
         .status-error {
             background: #f2dede;
-            color: #a94442;
+            color: var(--error-color);
         }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .gauges-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .gauge {
+            flex: 1;
+            min-width: 200px;
+            max-width: 300px;
+            margin: 10px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 10px 0;
+            margin: 15px 0;
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
         }
+
         th, td {
-            padding: 8px;
+            padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #eee;
         }
+
         th {
-            background: #f8f9fa;
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
         }
-        .gauge {
-            width: 200px;
-            height: 200px;
-            display: inline-block;
-            margin: 10px;
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        @media (max-width: 768px) {
+            .gauges-container {
+                flex-direction: column;
+            }
+            
+            .gauge {
+                width: 100%;
+                max-width: none;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
         }
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>JD-ISOBus Monitor</h1>
+        <h1>📊 JD-ISOBus Monitor</h1>
         
         <!-- Status da Rede -->
         <div class="card">
-            <h2>Status da Rede</h2>
-            <p>
-                Status: <span id="wifi-status" class="status"></span><br>
-                SSID: <span id="wifi-ssid"></span><br>
-                IP: <span id="wifi-ip"></span><br>
-                Gateway: <span id="wifi-gateway"></span>
-            </p>
+            <h2>🌐 Status da Rede</h2>
+            <div class="info-grid">
+                <span class="info-label">Status:</span>
+                <span id="wifi-status" class="status"></span>
+                
+                <span class="info-label">SSID:</span>
+                <span id="wifi-ssid"></span>
+                
+                <span class="info-label">IP:</span>
+                <span id="wifi-ip"></span>
+                
+                <span class="info-label">Gateway:</span>
+                <span id="wifi-gateway"></span>
+            </div>
         </div>
         
         <!-- Dados em Tempo Real -->
         <div class="card">
-            <h2>Dados em Tempo Real</h2>
-            <div id="gauge-flow" class="gauge"></div>
-            <div id="gauge-moisture" class="gauge"></div>
-            <div id="gauge-width" class="gauge"></div>
+            <h2>📈 Dados em Tempo Real</h2>
+            <div class="gauges-container">
+                <div id="gauge-flow" class="gauge"></div>
+                <div id="gauge-moisture" class="gauge"></div>
+                <div id="gauge-width" class="gauge"></div>
+            </div>
         </div>
         
         <!-- Mensagens CAN -->
         <div class="card">
-            <h2>Mensagens CAN</h2>
+            <h2>💻 Mensagens CAN</h2>
             <table>
                 <thead>
                     <tr>
@@ -101,22 +189,25 @@
         // Configuração dos gauges
         const gaugeConfig = {
             flow: {
-                title: 'Fluxo de Grãos',
+                title: '🌾 Fluxo de Grãos',
                 suffix: 'kg/s',
                 min: 0,
-                max: 50
+                max: 50,
+                color: '#2ecc71'
             },
             moisture: {
-                title: 'Umidade',
+                title: '💧 Umidade',
                 suffix: '%',
                 min: 0,
-                max: 100
+                max: 100,
+                color: '#3498db'
             },
             width: {
-                title: 'Largura',
+                title: '📏 Largura',
                 suffix: 'm',
                 min: 0,
-                max: 12
+                max: 12,
+                color: '#e74c3c'
             }
         };
 
@@ -126,20 +217,36 @@
                 type: 'indicator',
                 mode: 'gauge+number',
                 value: 0,
-                title: { text: config.title },
+                title: { 
+                    text: config.title,
+                    font: { size: 24 }
+                },
+                number: {
+                    font: { size: 30 },
+                    suffix: config.suffix
+                },
                 gauge: {
-                    axis: { range: [config.min, config.max] },
-                    bar: { color: '#1f77b4' },
+                    axis: { 
+                        range: [config.min, config.max],
+                        tickwidth: 1,
+                        tickcolor: "#333"
+                    },
+                    bar: { color: config.color },
+                    bgcolor: "white",
+                    borderwidth: 2,
+                    bordercolor: "#333",
                     steps: [
-                        { range: [0, config.max/3], color: 'lightgray' },
-                        { range: [config.max/3, config.max*2/3], color: 'gray' },
-                        { range: [config.max*2/3, config.max], color: 'darkgray' }
+                        { range: [0, config.max/3], color: 'rgba(0,0,0,0.1)' },
+                        { range: [config.max/3, config.max*2/3], color: 'rgba(0,0,0,0.2)' },
+                        { range: [config.max*2/3, config.max], color: 'rgba(0,0,0,0.3)' }
                     ]
                 }
             }], {
-                margin: { t: 25, b: 25, l: 25, r: 25 },
-                width: 200,
-                height: 200
+                margin: { t: 30, b: 30, l: 30, r: 30 },
+                width: null,
+                height: 250,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
             });
         });
 
@@ -175,7 +282,6 @@
                     if(data.can_messages.length > 0) {
                         const lastMsg = data.can_messages[data.can_messages.length - 1];
                         if(lastMsg.pgn === 61184) { // PGN_GRAIN_FLOW
-                            // Extrai dados do payload
                             const grainFlow = parseInt(lastMsg.payload.substr(4, 4), 16) * 0.01;
                             const moisture = parseInt(lastMsg.payload.substr(8, 4), 16) * 0.01;
                             
@@ -183,12 +289,16 @@
                             Plotly.update('gauge-moisture', { 'value': [moisture] });
                         }
                         else if(lastMsg.pgn === 65535) { // PGN_HEADER_INFO
-                            const width = parseInt(lastMsg.payload.substr(2, 4), 16) / 1000; // Converte mm para m
+                            const width = parseInt(lastMsg.payload.substr(2, 4), 16) / 1000;
                             Plotly.update('gauge-width', { 'value': [width] });
                         }
                     }
                 })
-                .catch(error => console.error('Erro:', error));
+                .catch(error => {
+                    console.error('Erro:', error);
+                    document.getElementById('wifi-status').className = 'status status-error';
+                    document.getElementById('wifi-status').textContent = 'Erro de conexão';
+                });
         }
     </script>
 </body>
