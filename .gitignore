@@ -1,25 +1,17 @@
-# Arquivos de compilação
-*.o
-*.a
+# Arquivos de compilação Arduino
 *.hex
-*.bin
 *.elf
-*.map
+*.bin
 
-# Arquivos do Arduino IDE
+# Arquivos temporários do Arduino IDE
 .vscode/
-.pio/
-.pioenvs/
-.piolibdeps/
+*~
+*.swp
+*.swo
 
 # Arquivos do sistema
 .DS_Store
 Thumbs.db
 
-# Arquivos de ambiente Python
-.venv/
-__pycache__/
-*.pyc
-
-# Arquivos de log
-*.log
+# Arquivos de backup do Arduino IDE
+*.bak
