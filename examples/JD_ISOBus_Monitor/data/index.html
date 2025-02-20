@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JD-ISOBus Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+        .status-ok {
+            background: #dff0d8;
+            color: #3c763d;
+        }
+        .status-error {
+            background: #f2dede;
+            color: #a94442;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f8f9fa;
+        }
+        .gauge {
+            width: 200px;
+            height: 200px;
+            display: inline-block;
+            margin: 10px;
+        }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>JD-ISOBus Monitor</h1>
+        
+        <!-- Status da Rede -->
+        <div class="card">
+            <h2>Status da Rede</h2>
+            <p>
+                Status: <span id="wifi-status" class="status"></span><br>
+                SSID: <span id="wifi-ssid"></span><br>
+                IP: <span id="wifi-ip"></span><br>
+                Gateway: <span id="wifi-gateway"></span>
+            </p>
+        </div>
+        
+        <!-- Dados em Tempo Real -->
+        <div class="card">
+            <h2>Dados em Tempo Real</h2>
+            <div id="gauge-flow" class="gauge"></div>
+            <div id="gauge-moisture" class="gauge"></div>
+            <div id="gauge-width" class="gauge"></div>
+        </div>
+        
+        <!-- Mensagens CAN -->
+        <div class="card">
+            <h2>Mensagens CAN</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>PGN</th>
+                        <th>Fonte</th>
+                        <th>Dados</th>
+                    </tr>
+                </thead>
+                <tbody id="can-messages">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Configuração dos gauges
+        const gaugeConfig = {
+            flow: {
+                title: 'Fluxo de Grãos',
+                suffix: 'kg/s',
+                min: 0,
+                max: 50
+            },
+            moisture: {
+                title: 'Umidade',
+                suffix: '%',
+                min: 0,
+                max: 100
+            },
+            width: {
+                title: 'Largura',
+                suffix: 'm',
+                min: 0,
+                max: 12
+            }
+        };
+
+        // Cria os gauges
+        Object.entries(gaugeConfig).forEach(([id, config]) => {
+            Plotly.newPlot(`gauge-${id}`, [{
+                type: 'indicator',
+                mode: 'gauge+number',
+                value: 0,
+                title: { text: config.title },
+                gauge: {
+                    axis: { range: [config.min, config.max] },
+                    bar: { color: '#1f77b4' },
+                    steps: [
+                        { range: [0, config.max/3], color: 'lightgray' },
+                        { range: [config.max/3, config.max*2/3], color: 'gray' },
+                        { range: [config.max*2/3, config.max], color: 'darkgray' }
+                    ]
+                }
+            }], {
+                margin: { t: 25, b: 25, l: 25, r: 25 },
+                width: 200,
+                height: 200
+            });
+        });
+
+        // Atualiza dados a cada segundo
+        setInterval(updateData, 1000);
+
+        function updateData() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    // Atualiza status WiFi
+                    const wifiStatus = document.getElementById('wifi-status');
+                    wifiStatus.textContent = data.wifi.connected ? 'Conectado' : 'Desconectado';
+                    wifiStatus.className = 'status ' + (data.wifi.connected ? 'status-ok' : 'status-error');
+                    
+                    document.getElementById('wifi-ssid').textContent = data.wifi.ssid;
+                    document.getElementById('wifi-ip').textContent = data.wifi.ip;
+                    document.getElementById('wifi-gateway').textContent = data.wifi.gateway;
+                    
+                    // Atualiza tabela de mensagens
+                    const tbody = document.getElementById('can-messages');
+                    tbody.innerHTML = '';
+                    
+                    data.can_messages.forEach(msg => {
+                        const row = tbody.insertRow();
+                        row.insertCell().textContent = new Date(msg.timestamp).toLocaleTimeString();
+                        row.insertCell().textContent = '0x' + msg.pgn.toString(16).toUpperCase();
+                        row.insertCell().textContent = msg.source;
+                        row.insertCell().textContent = msg.payload;
+                    });
+                    
+                    // Atualiza gauges com últimos valores
+                    if(data.can_messages.length > 0) {
+                        const lastMsg = data.can_messages[data.can_messages.length - 1];
+                        if(lastMsg.pgn === 61184) { // PGN_GRAIN_FLOW
+                            // Extrai dados do payload
+                            const grainFlow = parseInt(lastMsg.payload.substr(4, 4), 16) * 0.01;
+                            const moisture = parseInt(lastMsg.payload.substr(8, 4), 16) * 0.01;
+                            
+                            Plotly.update('gauge-flow', { 'value': [grainFlow] });
+                            Plotly.update('gauge-moisture', { 'value': [moisture] });
+                        }
+                        else if(lastMsg.pgn === 65535) { // PGN_HEADER_INFO
+                            const width = parseInt(lastMsg.payload.substr(2, 4), 16) / 1000; // Converte mm para m
+                            Plotly.update('gauge-width', { 'value': [width] });
+                        }
+                    }
+                })
+                .catch(error => console.error('Erro:', error));
+        }
+    </script>
+</body>
+</html> 
