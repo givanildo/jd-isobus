@@ -1,0 +1,13 @@
+# Definindo linguagem principal como C++
+*.h linguist-language=C++
+*.cpp linguist-language=C++
+*.ino linguist-language=C++
+
+# Ignorando arquivos HTML da contagem de linguagem
+*.html linguist-vendored
+*.css linguist-vendored
+*.js linguist-vendored
+
+# Ignorando arquivos Python antigos
+*.py linguist-vendored
+requirements.txt linguist-vendored 
